@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-win:
     # windows-2022 có Visual Studio 2022 (node-gyp nhận được; windows-latest đã lên VS2026 quá mới)
@@ -33,9 +36,18 @@ jobs:
       - name: Build + package Windows .exe
         run: npm run dist:win
 
-      - name: Upload .exe
+      - name: Upload .exe (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: DAY3-BLUEPRINT-windows
           path: dist/*.exe
           if-no-files-found: error
+
+      - name: Publish Release (link tải công khai)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: win-latest
+          name: DAY3 BLUEPRINT — Windows build
+          body: "Tải file portable .exe bên dưới, chạy thẳng trên Windows (không cần cài Node)."
+          files: dist/*.exe
+          fail_on_unmatched_files: true
