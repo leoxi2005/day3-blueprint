@@ -1,0 +1,33 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # windows-latest đã có sẵn MSVC (C++) + Python → node-gyp biên dịch NDI OK
+      - name: Install deps (compile NDI native)
+        run: npm install
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build + package Windows .exe
+        run: npm run dist:win
+
+      - name: Upload .exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: DAY3-BLUEPRINT-windows
+          path: dist/*.exe
+          if-no-files-found: error
