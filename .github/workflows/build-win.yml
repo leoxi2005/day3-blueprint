@@ -7,15 +7,15 @@ on:
 
 jobs:
   build-win:
-    runs-on: windows-latest
+    # windows-2022 có Visual Studio 2022 (node-gyp nhận được; windows-latest đã lên VS2026 quá mới)
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      # windows-latest đã có sẵn MSVC (C++) + Python → node-gyp biên dịch NDI OK
       - name: Install deps (compile NDI native)
         run: npm install
 
