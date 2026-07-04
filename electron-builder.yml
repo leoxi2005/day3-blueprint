@@ -1,0 +1,24 @@
+appId: com.day3.blueprint
+productName: DAY3 BLUEPRINT
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+# Giữ native NDI (grandiose.node + libndi.dll) ngoài asar để nạp được lúc chạy.
+asarUnpack:
+  - "**/node_modules/@stagetimerio/grandiose/**"
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-${version}-setup.${ext}
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

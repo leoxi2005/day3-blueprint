@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DAY3 · FLOOR</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #080b16; overflow: hidden; }
+      * { box-sizing: border-box; }
+      @keyframes floatyF {
+        0%   { transform: translate(-50%,-50%) rotate(var(--rot)) translate(0,0); }
+        25%  { transform: translate(-50%,-50%) rotate(var(--rot)) translate(7px,-14px); }
+        50%  { transform: translate(-50%,-50%) rotate(var(--rot)) translate(0,-26px); }
+        75%  { transform: translate(-50%,-50%) rotate(var(--rot)) translate(-7px,-13px); }
+        100% { transform: translate(-50%,-50%) rotate(var(--rot)) translate(0,0); }
+      }
+      @keyframes tickdraw { 0%{stroke-dashoffset:26;} 60%{stroke-dashoffset:0;} 100%{stroke-dashoffset:0;} }
+      @keyframes shimmermove { 0%{transform:translateX(-140%);} 100%{transform:translateX(320%);} }
+      @keyframes spin { to{transform:rotate(360deg);} }
+      @keyframes indet { 0%{transform:translateX(-100%);} 100%{transform:translateX(320%);} }
+      @keyframes sceneIn { from{opacity:0;} to{opacity:1;} }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.tsx"></script>
+  </body>
+</html>
