@@ -16,8 +16,16 @@ jobs:
         with:
           node-version: 22
 
+      # node-gyp 9.4.1 (grandiose) hỏng với Python 3.12 → ép Python 3.11
+      - uses: actions/setup-python@v5
+        id: py
+        with:
+          python-version: '3.11'
+
       - name: Install deps (compile NDI native)
         run: npm install
+        env:
+          npm_config_python: ${{ steps.py.outputs.python-path }}
 
       - name: Typecheck
         run: npm run typecheck
