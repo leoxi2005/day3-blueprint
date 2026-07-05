@@ -28,8 +28,15 @@ function floorScene(S: ShowState, W: number, H: number) {
  */
 export function OutputPreview({ S, surface, width, enabled }: { S: ShowState; surface: 'wall' | 'floor'; width: number; enabled: boolean }) {
   const o = S.outputs.find((x) => x.key === surface)
-  const W = o?.resW || (surface === 'wall' ? CONSTANTS.WALL_W : CONSTANTS.FLOOR_W)
-  const H = o?.resH || (surface === 'wall' ? CONSTANTS.WALL_H : CONSTANTS.FLOOR_H)
+  const resW = o?.resW || (surface === 'wall' ? CONSTANTS.WALL_W : CONSTANTS.FLOOR_W)
+  const resH = o?.resH || (surface === 'wall' ? CONSTANTS.WALL_H : CONSTANTS.FLOOR_H)
+
+  // Render preview ở độ phân giải THẤP (giữ tỉ lệ) — scene responsive nên bố cục vẫn đúng,
+  // nhẹ hơn full-res cả trăm lần → giữ preview bật mà không tốn GPU.
+  const PMAX = 700
+  const aspect = resH / resW
+  const W = resW >= resH ? PMAX : Math.round(PMAX / aspect)
+  const H = resW >= resH ? Math.round(PMAX * aspect) : PMAX
 
   const s = width / W // preview scale
   const frameH = Math.max(1, Math.round(H * s))
