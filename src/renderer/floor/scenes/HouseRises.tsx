@@ -32,7 +32,7 @@ function useHouseCanvas(W: number, H: number, rotate: boolean, onPhase: (p: stri
     const WALLH = 3
     const TW = 272 * k
     const TH = 164 * k
-    const ZS = 180 * k
+    const ZS = 214 * k // tường cao hơn cho có khối
     const ox = W / 2
     const oy = H * 0.545
     const CY = '91,232,255'
@@ -41,6 +41,8 @@ function useHouseCanvas(W: number, H: number, rotate: boolean, onPhase: (p: stri
     const WT = '226,240,255'
 
     let ROT = 0
+    // CAM = "khoảng cách camera": nhỏ hơn = phối cảnh mạnh hơn. Phải > max(rx+ry) (~17).
+    const CAM = 44
     const proj = (x: number, y: number, z: number): Vec => {
       const px = x - hx
       const py = y - hy
@@ -48,7 +50,11 @@ function useHouseCanvas(W: number, H: number, rotate: boolean, onPhase: (p: stri
       const s = Math.sin(ROT)
       const rx = px * c - py * s
       const ry = px * s + py * c
-      return { x: ox + (rx - ry) * TW / 2, y: oy + (rx + ry) * TH / 2 - z * ZS, d: rx + ry }
+      const depth = rx + ry
+      const persp = CAM / (CAM - depth) // gần (depth+) phóng to, xa (depth-) thu nhỏ & hội tụ
+      const sx = (rx - ry) * TW / 2
+      const sy = (rx + ry) * TH / 2 - z * ZS
+      return { x: ox + sx * persp, y: oy + sy * persp, d: depth }
     }
 
     const partV = 6
@@ -118,17 +124,22 @@ function useHouseCanvas(W: number, H: number, rotate: boolean, onPhase: (p: stri
       if (!s) { s = 'rgb(' + col + ')'; solidCache.set(col, s) }
       return s
     }
+    // depth-fog: điểm gần viewer (rx+ry lớn) sáng/đậm hơn, xa thì mờ → tạo chiều sâu
+    const fog = (d: number): number => Math.max(0.28, Math.min(1, 0.5 + d * 0.045))
     const line = (a: Vec, b: Vec, col: string, w: number, al: number): void => {
-      ctx.globalAlpha = fade * al
+      const fg = fog((a.d + b.d) * 0.5)
+      ctx.globalAlpha = fade * al * fg
       ctx.strokeStyle = solidOf(col)
-      ctx.lineWidth = w
+      ctx.lineWidth = w * (0.55 + 0.7 * fg) // gần dày hơn
       ctx.beginPath()
       ctx.moveTo(a.x, a.y)
       ctx.lineTo(b.x, b.y)
       ctx.stroke()
     }
     const quad = (p: Vec[], col: string, al: number): void => {
-      ctx.globalAlpha = fade * al
+      let dsum = 0
+      for (const pt of p) dsum += pt.d
+      ctx.globalAlpha = fade * al * fog(dsum / p.length)
       ctx.fillStyle = solidOf(col)
       ctx.beginPath()
       ctx.moveTo(p[0].x, p[0].y)
