@@ -3,6 +3,9 @@
 // Reducer + tick engine port từ `Day3 Control Panel.dc.html`.
 // Renderer chỉ gửi Action; store áp dụng rồi broadcast snapshot.
 // ============================================================================
+import { app } from 'electron'
+import { join } from 'path'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import {
   Action,
   CONSTANTS,
@@ -11,6 +14,7 @@ import {
   OSC_LOG_MAX,
   Output,
   Participant,
+  PresetConfig,
   SceneSel,
   ShowState
 } from '../shared/types'
@@ -44,6 +48,8 @@ function defaultState(): ShowState {
     globalState: 'field',
     blacked: false,
     sceneSel: { wall: 'auto', floor: 'auto' },
+    ascendX: 0.5,
+    presets: [],
     outputs: DEFAULT_OUTPUTS.map((o) => ({ ...o })),
     ndi: { running: true, fps: 30 },
     oscPort: 9000,
@@ -66,6 +72,7 @@ export class ShowStore {
   private doneMs = 0
   private settleTimer: NodeJS.Timeout | null = null
   private tickTimer: NodeJS.Timeout | null = null
+  private presetsMap: Record<string, PresetConfig> = {}
 
   getState(): ShowState {
     return this.state
@@ -100,7 +107,54 @@ export class ShowStore {
   }
 
   // ---- vòng đời tick -------------------------------------------------------
+  // ---- presets (lưu ra đĩa userData) --------------------------------------
+  private presetsFile(): string {
+    return join(app.getPath('userData'), 'day3-presets.json')
+  }
+  private loadPresetsFromDisk(): void {
+    try {
+      const f = this.presetsFile()
+      if (existsSync(f)) this.presetsMap = JSON.parse(readFileSync(f, 'utf-8')) || {}
+    } catch { this.presetsMap = {} }
+    this.state = { ...this.state, presets: Object.keys(this.presetsMap).sort() }
+  }
+  private writePresetsToDisk(): void {
+    try { writeFileSync(this.presetsFile(), JSON.stringify(this.presetsMap, null, 2)) } catch { /* ignore */ }
+  }
+  private snapshotConfig(): PresetConfig {
+    const S = this.state
+    return {
+      namesText: S.namesText,
+      sceneSel: { ...S.sceneSel },
+      ascendX: S.ascendX,
+      outputs: S.outputs.map((o) => ({ key: o.key, resW: o.resW, resH: o.resH, display: o.display, displayLabel: o.displayLabel, mode: o.mode })),
+      ndiFps: S.ndi.fps,
+      oscPort: S.oscPort,
+      draftDuration: S.draftDuration
+    }
+  }
+  private applyConfig(c: PresetConfig): void {
+    const outputs = this.state.outputs.map((o) => {
+      const p = c.outputs?.find((x) => x.key === o.key)
+      return p ? { ...o, resW: p.resW, resH: p.resH, display: p.display, displayLabel: p.displayLabel, mode: p.mode } : o
+    })
+    const names = c.namesText.split(',').map((x) => x.trim()).filter(Boolean)
+    this.set({
+      namesText: c.namesText,
+      participants: (names.length ? names : ['RIA']).map(mkParticipant),
+      sceneSel: { ...c.sceneSel },
+      ascendX: c.ascendX ?? 0.5,
+      outputs,
+      ndi: { ...this.state.ndi, fps: c.ndiFps ?? 60 },
+      oscPort: c.oscPort ?? 9000,
+      draftDuration: c.draftDuration ?? 30,
+      globalState: 'field',
+      blacked: false
+    })
+  }
+
   start(): void {
+    this.loadPresetsFromDisk()
     this.log(OSC.boot, 'ready')
     this.log(OSC.osc, 'listening :' + this.state.oscPort)
     this.tickTimer = setInterval(() => this.tick(), CONSTANTS.TICK_MS)
@@ -273,6 +327,33 @@ export class ShowStore {
       case 'setScene': {
         this.set({ sceneSel: { ...S.sceneSel, [a.surface]: a.value } as SceneSel })
         this.log(OSC.output + '/' + a.surface, 'scene ' + a.value)
+        break
+      }
+      case 'setAscendX': {
+        this.set({ ascendX: Math.max(0, Math.min(1, a.value)) })
+        break
+      }
+      case 'savePreset': {
+        const name = a.name.trim()
+        if (!name) break
+        this.presetsMap[name] = this.snapshotConfig()
+        this.writePresetsToDisk()
+        this.set({ presets: Object.keys(this.presetsMap).sort() })
+        this.log(OSC.boot, 'preset saved ' + name)
+        break
+      }
+      case 'loadPreset': {
+        const c = this.presetsMap[a.name]
+        if (!c) break
+        this.applyConfig(c)
+        this.log(OSC.boot, 'preset loaded ' + a.name)
+        break
+      }
+      case 'deletePreset': {
+        if (!this.presetsMap[a.name]) break
+        delete this.presetsMap[a.name]
+        this.writePresetsToDisk()
+        this.set({ presets: Object.keys(this.presetsMap).sort() })
         break
       }
       case 'toggleWindow': {

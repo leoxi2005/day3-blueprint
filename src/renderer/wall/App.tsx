@@ -24,7 +24,7 @@ export function App() {
       >
         {S && scene === 'blueprints' && <Blueprints key="bp" names={names} W={W} H={H} />}
         {S && scene === 'drafting' && <Drafting key="df" participants={S.participants} W={W} H={H} />}
-        {S && scene === 'ascension' && <Ascension key="as" names={names} W={W} H={H} />}
+        {S && scene === 'ascension' && <Ascension key="as" names={names} W={W} H={H} cx={S.ascendX} />}
       </div>
     </div>
   )

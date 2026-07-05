@@ -10,7 +10,7 @@ function wallScene(S: ShowState, W: number, H: number) {
   switch (resolveWall(S)) {
     case 'blueprints': return <Blueprints names={S.participants.map((p) => p.name)} W={W} H={H} />
     case 'drafting': return <Drafting participants={S.participants} W={W} H={H} />
-    case 'ascension': return <Ascension names={S.participants.map((p) => p.name)} W={W} H={H} />
+    case 'ascension': return <Ascension names={S.participants.map((p) => p.name)} W={W} H={H} cx={S.ascendX} />
     default: return null // off
   }
 }

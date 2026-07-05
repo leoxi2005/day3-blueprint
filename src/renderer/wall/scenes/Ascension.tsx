@@ -9,8 +9,8 @@ const CYCLE = 12
 const ASC_BG =
   'radial-gradient(2100px 1300px at 50% -18%, rgba(91,232,255,.22), transparent 58%),radial-gradient(1700px 1100px at 16% 24%, rgba(150,120,255,.18), transparent 62%),radial-gradient(1700px 1100px at 86% 74%, rgba(60,180,235,.14), transparent 62%),radial-gradient(2200px 1400px at 50% 134%, rgba(12,20,48,.66), transparent 72%),linear-gradient(180deg,#0a1022 0%,#070b16 60%,#04060e 100%)'
 
-function buildCards(baseNames: string[], W: number, H: number) {
-  const PX = W / 2
+function buildCards(baseNames: string[], W: number, H: number, cx: number) {
+  const PX = W * cx
   const PY = H * 0.157
   const base = baseNames.length ? baseNames : ['RIA', 'ANA', 'KAI']
   const target = base.length >= 12 ? base.length : 24 // giữ mật độ dòng chảy khi roster nhỏ
@@ -28,7 +28,7 @@ function buildCards(baseNames: string[], W: number, H: number) {
   })
 }
 
-function useAscensionCanvas(W: number, H: number) {
+function useAscensionCanvas(W: number, H: number, cx: number) {
   const ref = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
     const cv = ref.current
@@ -36,7 +36,7 @@ function useAscensionCanvas(W: number, H: number) {
     cv.width = W
     cv.height = H
     const ctx = cv.getContext('2d')!
-    const PX = W / 2
+    const PX = W * cx
     const PY = H * 0.157
     const nStars = Math.min(2000, Math.max(400, Math.round(1750 * (W * H) / (DW * DH))))
     const nDust = Math.min(320, Math.max(60, Math.round(260 * (W * H) / (DW * DH))))
@@ -106,16 +106,16 @@ function useAscensionCanvas(W: number, H: number) {
     }
     raf = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(raf)
-  }, [W, H])
+  }, [W, H, cx])
   return ref
 }
 
-export function Ascension({ names, W = DW, H = DH }: { names: string[]; W?: number; H?: number }) {
-  const canvasRef = useAscensionCanvas(W, H)
+export function Ascension({ names, W = DW, H = DH, cx = 0.5 }: { names: string[]; W?: number; H?: number; cx?: number }) {
+  const canvasRef = useAscensionCanvas(W, H, cx)
   const k = Math.min(W / DW, H / DH)
-  const PX = W / 2
+  const PX = W * cx
   const PY = H * 0.157
-  const cards = useMemo(() => buildCards(names, W, H), [names.join('|'), W, H])
+  const cards = useMemo(() => buildCards(names, W, H, cx), [names.join('|'), W, H, cx])
 
   return (
     <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', background: ASC_BG, animation: 'sceneIn .6s ease' }}>

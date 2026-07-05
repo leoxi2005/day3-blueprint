@@ -125,6 +125,17 @@ function PreviewBox({ S, displays, enabled, onToggle }: { S: ShowState; displays
           </div>
         </div>
 
+        {/* Ascend: điểm hút qua trái ⟷ phải (chỉ tường) */}
+        {surface === 'wall' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 5px' }}>
+              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '.16em', color: T.dim }}>ASCEND · ĐIỂM HÚT ◄ ►</span>
+              <span style={{ fontFamily: MONO, fontSize: 9, color: T.muted }}>{Math.round(S.ascendX * 100)}%</span>
+            </div>
+            <input type="range" min={0} max={100} value={Math.round(S.ascendX * 100)} onChange={(e) => d({ type: 'setAscendX', value: (parseInt(e.target.value) || 0) / 100 })} style={{ width: '100%', accentColor: T.violet }} />
+          </div>
+        )}
+
         {/* Resolution */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 0 5px' }}>
@@ -199,6 +210,36 @@ function NdiBox({ S }: { S: ShowState }) {
   )
 }
 
+// ---- Presets: lưu/nạp toàn bộ cấu hình ------------------------------------
+function PresetsCard({ S }: { S: ShowState }) {
+  const [name, setName] = useState('')
+  const save = (): void => {
+    const n = name.trim()
+    if (!n) return
+    d({ type: 'savePreset', name: n })
+    setName('')
+  }
+  return (
+    <Card title="Presets">
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input value={name} placeholder="Tên preset…" onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') save() }} style={{ flex: 1, minWidth: 0, background: 'rgba(7,9,18,.6)', border: `1px solid ${T.glassBorder}`, borderRadius: 8, color: T.text, fontFamily: MONO, fontSize: 12, padding: '9px 11px', outline: 'none' }} />
+        <button onClick={save} style={{ flex: '0 0 auto', padding: '9px 18px', borderRadius: 8, border: '1px solid rgba(110,231,168,.5)', background: 'rgba(110,231,168,.1)', color: T.green, fontFamily: MONO, fontSize: 11, letterSpacing: '.14em', textTransform: 'uppercase', cursor: 'pointer' }}>Save</button>
+      </div>
+      {S.presets.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 12 }}>
+          {S.presets.map((p) => (
+            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(7,9,18,.4)', border: '1px solid rgba(140,165,210,.16)' }}>
+              <span style={{ flex: 1, minWidth: 0, fontFamily: MONO, fontSize: 12, letterSpacing: '.06em', color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p}</span>
+              <button onClick={() => d({ type: 'loadPreset', name: p })} style={{ flex: '0 0 auto', padding: '6px 14px', borderRadius: 7, border: '1px solid rgba(91,232,255,.5)', background: 'rgba(91,232,255,.1)', color: T.cyan, fontFamily: MONO, fontSize: 10, letterSpacing: '.12em', textTransform: 'uppercase', cursor: 'pointer' }}>Load</button>
+              <button onClick={() => d({ type: 'deletePreset', name: p })} title="Xóa" style={{ flex: '0 0 auto', width: 26, height: 26, borderRadius: 7, border: '1px solid rgba(232,138,128,.4)', background: 'rgba(200,70,60,.08)', color: T.danger, fontSize: 14, lineHeight: 1, cursor: 'pointer' }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 export function App() {
   const S = useShowState()
   const [displays, setDisplays] = useState<{ id: number; label: string }[]>([])
@@ -236,6 +277,8 @@ export function App() {
               <button onClick={() => d({ type: 'reset' })} style={{ flex: '0 0 auto', padding: '11px 20px', borderRadius: 9, border: '1px solid rgba(140,165,210,.28)', background: 'rgba(7,9,18,.4)', color: T.muted, fontFamily: MONO, fontSize: 12, letterSpacing: '.16em', textTransform: 'uppercase', cursor: 'pointer' }}>Reset</button>
             </div>
           </Card>
+
+          <PresetsCard S={S} />
 
         </div>
 

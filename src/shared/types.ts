@@ -53,6 +53,8 @@ export interface ShowState {
   globalState: GlobalState
   blacked: boolean
   sceneSel: SceneSel
+  ascendX: number // vị trí điểm hút ngang của scene Ascend (0=trái, .5=giữa, 1=phải)
+  presets: string[] // tên các preset đã lưu
   outputs: Output[]
   ndi: NdiState
   oscPort: number
@@ -65,6 +67,17 @@ export interface ShowState {
 }
 
 export const OSC_LOG_MAX = 80
+
+// ---- Preset: snapshot cấu hình người dùng chỉnh ---------------------------
+export interface PresetConfig {
+  namesText: string
+  sceneSel: SceneSel
+  ascendX: number
+  outputs: Array<Pick<Output, 'key' | 'resW' | 'resH' | 'display' | 'displayLabel' | 'mode'>>
+  ndiFps: 30 | 60
+  oscPort: number
+  draftDuration: number
+}
 
 // ---- OSC address vocabulary (giữ nguyên làm giao thức thật) --------------
 export const OSC = {
@@ -106,6 +119,10 @@ export type Action =
   | { type: 'setResolution'; index: number; resW: number; resH: number }
   | { type: 'setScene'; surface: 'wall'; value: WallSceneSel }
   | { type: 'setScene'; surface: 'floor'; value: FloorSceneSel }
+  | { type: 'setAscendX'; value: number }
+  | { type: 'savePreset'; name: string }
+  | { type: 'loadPreset'; name: string }
+  | { type: 'deletePreset'; name: string }
   | { type: 'toggleWindow'; index: number }
   | { type: 'toggleNdi' }
   | { type: 'setNdiFps'; fps: 30 | 60 }
