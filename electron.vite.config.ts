@@ -7,7 +7,9 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     build: {
       rollupOptions: {
-        input: { index: resolve('src/main/index.ts') }
+        input: { index: resolve('src/main/index.ts') },
+        // native optional dep — không bundle, require lúc chạy
+        external: ['day3-spout']
       }
     }
   },

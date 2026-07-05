@@ -6,6 +6,7 @@ import { app, ipcMain, BrowserWindow } from 'electron'
 import { ShowStore } from './store'
 import { WindowManager } from './windows'
 import { NdiService } from './ndi'
+import { SpoutService } from './spout'
 import { Action } from '../shared/types'
 
 // Giữ output window chạy animation dù bị che/không focus (để frame NDI không đứng hình).
@@ -27,11 +28,12 @@ if (process.platform === 'win32') {
 const store = new ShowStore()
 const wm = new WindowManager()
 const ndi = new NdiService()
+const spout = new SpoutService()
 let quitting = false
 
 function broadcast(): void {
   const snapshot = store.getState()
-  for (const w of [...wm.getAll(), ...ndi.broadcastWindows()]) {
+  for (const w of [...wm.getAll(), ...ndi.broadcastWindows(), ...spout.broadcastWindows()]) {
     if (!w.webContents.isDestroyed()) w.webContents.send('day3:state', snapshot)
   }
 }
@@ -40,6 +42,7 @@ function broadcast(): void {
 function shutdown(): void {
   store.stop()
   ndi.stopAll()
+  spout.stopAll()
   for (const w of BrowserWindow.getAllWindows()) {
     if (!w.isDestroyed()) w.destroy()
   }
@@ -69,23 +72,34 @@ if (!app.requestSingleInstanceLock()) {
     ipcMain.handle('day3:getState', () => store.getState())
     ipcMain.handle('day3:listDisplays', () => WindowManager.listDisplays())
     ipcMain.handle('day3:ndiAvailable', () => ndi.available())
+    ipcMain.handle('day3:spoutAvailable', () => spout.available())
     ipcMain.on('day3:dispatch', (_e, action: Action) => store.dispatch(action))
 
     let lastOutputsRef = store.getState().outputs
     let lastNdiRef = store.getState().ndi
+    let lastSpout = store.getState().spoutRunning
     const syncNdi = (): void => {
       const s = store.getState()
       ndi.sync(s.ndi.running, s.ndi.fps, s.outputs)
+    }
+    const syncSpout = (): void => {
+      const s = store.getState()
+      spout.sync(s.spoutRunning, s.ndi.fps, s.outputs)
     }
     store.subscribe((state) => {
       if (state.outputs !== lastOutputsRef) {
         lastOutputsRef = state.outputs
         wm.syncOutputs(state.outputs)
         syncNdi()
+        syncSpout()
       }
       if (state.ndi !== lastNdiRef) {
         lastNdiRef = state.ndi
         syncNdi()
+      }
+      if (state.spoutRunning !== lastSpout) {
+        lastSpout = state.spoutRunning
+        syncSpout()
       }
       broadcast()
     })
@@ -98,6 +112,7 @@ if (!app.requestSingleInstanceLock()) {
     control.on('closed', () => forceQuit())
     wm.syncOutputs(store.getState().outputs)
     syncNdi()
+    syncSpout()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) wm.createControl()

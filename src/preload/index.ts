@@ -20,7 +20,9 @@ const api: Day3Api = {
 
 const listDisplays = (): Promise<{ id: number; label: string }[]> => ipcRenderer.invoke('day3:listDisplays')
 const ndiAvailable = (): Promise<boolean> => ipcRenderer.invoke('day3:ndiAvailable')
+const spoutAvailable = (): Promise<boolean> => ipcRenderer.invoke('day3:spoutAvailable')
 
 contextBridge.exposeInMainWorld('day3', api)
 contextBridge.exposeInMainWorld('day3displays', listDisplays)
 contextBridge.exposeInMainWorld('day3ndi', { available: ndiAvailable })
+contextBridge.exposeInMainWorld('day3spout', { available: spoutAvailable })

@@ -52,6 +52,7 @@ function defaultState(): ShowState {
     presets: [],
     outputs: DEFAULT_OUTPUTS.map((o) => ({ ...o })),
     ndi: { running: true, fps: 30 },
+    spoutRunning: false,
     oscPort: 9000,
     oscListening: true,
     oscLog: [],
@@ -377,6 +378,10 @@ export class ShowStore {
       case 'toggleNdi':
         this.set({ ndi: { ...S.ndi, running: !S.ndi.running } })
         this.log(OSC.ndi, this.state.ndi.running ? 'on' : 'off')
+        break
+      case 'toggleSpout':
+        this.set({ spoutRunning: !S.spoutRunning })
+        this.log(OSC.output, 'spout ' + (this.state.spoutRunning ? 'on' : 'off'))
         break
       case 'setNdiFps':
         this.set({ ndi: { ...S.ndi, fps: a.fps } })

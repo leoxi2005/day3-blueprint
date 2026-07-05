@@ -8,26 +8,34 @@
 #include <windows.h>
 #include <d3d11.h>
 #include <dxgi1_2.h>
+#include <map>
+#include <string>
 #include "spoutsdk/SpoutDX.h"
 
-static spoutDX* g_spout = nullptr;
+// Nhiều sender: keyed theo tên (Day3Wall / Day3Floor).
+static std::map<std::string, spoutDX*> g_senders;
 
 static Napi::Value Open(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   std::string name = info[0].As<Napi::String>().Utf8Value();
-  if (!g_spout) g_spout = new spoutDX();
-  bool ok = g_spout->OpenDirectX11();
-  if (ok) g_spout->SetSenderName(name.c_str());
+  spoutDX* s = g_senders.count(name) ? g_senders[name] : nullptr;
+  if (!s) { s = new spoutDX(); g_senders[name] = s; }
+  bool ok = s->OpenDirectX11();
+  if (ok) s->SetSenderName(name.c_str());
   return Napi::Boolean::New(env, ok);
 }
 
 static Napi::Value SendHandle(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  if (!g_spout) return Napi::Boolean::New(env, false);
-  Napi::Buffer<uint8_t> buf = info[0].As<Napi::Buffer<uint8_t>>();
+  std::string name = info[0].As<Napi::String>().Utf8Value();
+  auto it = g_senders.find(name);
+  if (it == g_senders.end()) return Napi::Boolean::New(env, false);
+  spoutDX* s = it->second;
+
+  Napi::Buffer<uint8_t> buf = info[1].As<Napi::Buffer<uint8_t>>();
   if (buf.Length() < sizeof(HANDLE)) return Napi::Boolean::New(env, false);
   HANDLE h = *reinterpret_cast<HANDLE*>(buf.Data());
-  ID3D11Device* dev = g_spout->GetDX11Device();
+  ID3D11Device* dev = s->GetDX11Device();
   if (!dev || !h) return Napi::Boolean::New(env, false);
 
   ID3D11Device1* dev1 = nullptr;
@@ -39,14 +47,14 @@ static Napi::Value SendHandle(const Napi::CallbackInfo& info) {
   dev1->Release();
   if (FAILED(hr) || !tex) return Napi::Boolean::New(env, false);
 
-  // Nếu texture có keyed mutex (Electron dùng) thì phải acquire trước khi đọc.
+  // Keyed mutex (nếu Electron dùng) — acquire trước khi đọc texture.
   IDXGIKeyedMutex* km = nullptr;
   bool locked = false;
   if (SUCCEEDED(tex->QueryInterface(__uuidof(IDXGIKeyedMutex), reinterpret_cast<void**>(&km))) && km) {
     if (SUCCEEDED(km->AcquireSync(0, 8))) locked = true;
   }
 
-  bool ok = g_spout->SendTexture(tex);
+  bool ok = s->SendTexture(tex);
 
   if (km) {
     if (locked) km->ReleaseSync(0);
@@ -57,10 +65,12 @@ static Napi::Value SendHandle(const Napi::CallbackInfo& info) {
 }
 
 static Napi::Value Close(const Napi::CallbackInfo& info) {
-  if (g_spout) {
-    g_spout->ReleaseSender();
-    delete g_spout;
-    g_spout = nullptr;
+  std::string name = info[0].As<Napi::String>().Utf8Value();
+  auto it = g_senders.find(name);
+  if (it != g_senders.end()) {
+    it->second->ReleaseSender();
+    delete it->second;
+    g_senders.erase(it);
   }
   return info.Env().Undefined();
 }

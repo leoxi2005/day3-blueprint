@@ -57,6 +57,7 @@ export interface ShowState {
   presets: string[] // tên các preset đã lưu
   outputs: Output[]
   ndi: NdiState
+  spoutRunning: boolean // Windows GPU output (song song NDI)
   oscPort: number
   oscListening: boolean
   oscLog: OscLogEntry[] // ring buffer, giữ tối đa OSC_LOG_MAX dòng cuối
@@ -125,6 +126,7 @@ export type Action =
   | { type: 'deletePreset'; name: string }
   | { type: 'toggleWindow'; index: number }
   | { type: 'toggleNdi' }
+  | { type: 'toggleSpout' }
   | { type: 'setNdiFps'; fps: 30 | 60 }
   | { type: 'setOscPort'; port: number }
   | { type: 'toggleListen' }

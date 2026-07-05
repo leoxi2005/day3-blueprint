@@ -176,7 +176,8 @@ function PreviewBox({ S, displays, enabled, onToggle }: { S: ShowState; displays
 // ---- Outputs: ô NDI -------------------------------------------------------
 function NdiBox({ S }: { S: ShowState }) {
   const [avail, setAvail] = useState<boolean | null>(null)
-  useEffect(() => { window.day3ndi.available().then(setAvail) }, [])
+  const [spoutAvail, setSpoutAvail] = useState<boolean | null>(null)
+  useEffect(() => { window.day3ndi.available().then(setAvail); window.day3spout.available().then(setSpoutAvail) }, [])
   const fpsBtn = (f: 30 | 60) => (
     <button onClick={() => d({ type: 'setNdiFps', fps: f })} style={{ flex: 1, padding: '8px 0', borderRadius: 7, fontFamily: MONO, fontSize: 12, cursor: 'pointer', border: `1px solid ${S.ndi.fps === f ? T.cyan + '88' : 'rgba(140,165,210,.18)'}`, background: S.ndi.fps === f ? T.cyan + '18' : 'rgba(7,9,18,.4)', color: S.ndi.fps === f ? T.cyan : T.muted }}>{f}</button>
   )
@@ -199,12 +200,23 @@ function NdiBox({ S }: { S: ShowState }) {
       </div>
       <button disabled={avail === false} onClick={() => d({ type: 'toggleNdi' })} style={{ width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: MONO, fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', cursor: avail === false ? 'default' : 'pointer', border: `1px solid ${avail === false ? 'rgba(140,165,210,.14)' : S.ndi.running ? 'rgba(232,138,128,.5)' : 'rgba(91,232,255,.5)'}`, background: avail === false ? 'rgba(7,9,18,.3)' : S.ndi.running ? 'rgba(232,138,128,.1)' : 'rgba(91,232,255,.1)', color: avail === false ? '#3f465e' : S.ndi.running ? T.danger : T.cyan }}>{S.ndi.running ? 'Stop NDI' : 'Start NDI'}</button>
       <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '.1em', color: avail === false ? T.danger : T.dim, textAlign: 'center' }}>
-        {avail === false ? 'NATIVE MODULE MISSING' : avail === true ? 'streams the OPEN output windows' : ''}
+        {avail === false ? 'NATIVE MODULE MISSING' : ''}
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '.12em', color: T.dim, paddingRight: 2 }}>FPS</span>
         {fpsBtn(30)}
         {fpsBtn(60)}
+      </div>
+
+      {/* Spout (Windows GPU, song song NDI) */}
+      <div style={{ height: 1, background: 'rgba(140,165,210,.12)', margin: '2px 0' }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: '.18em', color: T.violet }}>SPOUT <span style={{ color: T.dim, fontSize: 9 }}>· GPU</span></div>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '.1em', color: S.spoutRunning ? T.green : T.dim }}>{spoutAvail === false ? 'WINDOWS ONLY' : S.spoutRunning ? 'STREAMING' : 'STOPPED'}</div>
+      </div>
+      <button disabled={spoutAvail === false} onClick={() => d({ type: 'toggleSpout' })} style={{ width: '100%', padding: '10px 0', borderRadius: 8, fontFamily: MONO, fontSize: 12, letterSpacing: '.14em', textTransform: 'uppercase', cursor: spoutAvail === false ? 'default' : 'pointer', border: `1px solid ${spoutAvail === false ? 'rgba(140,165,210,.14)' : S.spoutRunning ? 'rgba(232,138,128,.5)' : 'rgba(185,166,255,.5)'}`, background: spoutAvail === false ? 'rgba(7,9,18,.3)' : S.spoutRunning ? 'rgba(232,138,128,.1)' : 'rgba(185,166,255,.12)', color: spoutAvail === false ? '#3f465e' : S.spoutRunning ? T.danger : T.violet }}>{S.spoutRunning ? 'Stop Spout' : 'Start Spout'}</button>
+      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '.08em', color: T.dim, textAlign: 'center' }}>
+        {spoutAvail === false ? 'chỉ chạy trên Windows' : 'TouchDesigner → Spout In (GPU, full-res mượt)'}
       </div>
     </div>
   )
