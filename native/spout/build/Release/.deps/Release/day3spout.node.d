@@ -1,0 +1,1 @@
+cmd_Release/day3spout.node := c++ -bundle -undefined dynamic_lookup -Wl,-search_paths_first -mmacosx-version-min=13.5 -arch arm64 -L./Release -stdlib=libc++  -o Release/day3spout.node Release/obj.target/day3spout/spout_addon.o 

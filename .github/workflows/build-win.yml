@@ -30,6 +30,12 @@ jobs:
         env:
           npm_config_python: ${{ steps.py.outputs.python-path }}
 
+      - name: Check Spout addon build (optional, non-fatal)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          if (Test-Path node_modules/day3-spout/build/Release/day3spout.node) { echo "SPOUT_ADDON=BUILT_OK" } else { echo "SPOUT_ADDON=NOT_BUILT" }
+
       - name: Typecheck
         run: npm run typecheck
 

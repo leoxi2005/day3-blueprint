@@ -29,5 +29,8 @@
   },
   "dependencies": {
     "@stagetimerio/grandiose": "^0.2.0"
+  },
+  "optionalDependencies": {
+    "day3-spout": "file:native/spout"
   }
 }

@@ -9,6 +9,7 @@ files:
 # Giữ native NDI (grandiose.node + libndi.dll) ngoài asar để nạp được lúc chạy.
 asarUnpack:
   - "**/node_modules/@stagetimerio/grandiose/**"
+  - "**/node_modules/day3-spout/**"
 win:
   target:
     - target: nsis
