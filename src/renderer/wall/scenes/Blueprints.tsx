@@ -107,7 +107,7 @@ function buildCards(names: string[], W: number, H: number) {
   const spanR = W - spanL
   const step = N > 1 ? (spanR - spanL) / (N - 1) : 0
   return names.map((name, i) => {
-    const cx = spanL + i * step
+    const cx = N > 1 ? spanL + i * step : W / 2
     let cy = H * (0.5 + Math.sin(i * 0.8 + 1) * 0.14 + (i % 2 ? 0.06 : -0.045))
     cy = Math.max(H * 0.28, Math.min(H * 0.72, cy))
     const dep = ((i * 5) % 7) / 6

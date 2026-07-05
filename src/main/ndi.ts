@@ -47,9 +47,27 @@ export class NdiService {
       .filter((w) => !w.isDestroyed())
   }
 
-  /** Reconcile: chạy khi ndi.running (không phụ thuộc cửa sổ chiếu). Res lấy từ output.resW/H. */
+  private syncing = false
+  private pending: { running: boolean; fps: number; outputs: Output[] } | null = null
+
+  /** Reconcile — SERIALIZE để không có 2 lần chạy chồng nhau (tránh tạo sender trùng/bỏ rơi cửa sổ). */
   async sync(running: boolean, fps: number, outputs: Output[]): Promise<void> {
     if (!this.available()) return
+    this.pending = { running, fps, outputs }
+    if (this.syncing) return
+    this.syncing = true
+    try {
+      while (this.pending) {
+        const p = this.pending
+        this.pending = null
+        await this.doSync(p.running, p.fps, p.outputs)
+      }
+    } finally {
+      this.syncing = false
+    }
+  }
+
+  private async doSync(running: boolean, fps: number, outputs: Output[]): Promise<void> {
     for (const o of outputs) {
       const role = o.key
       const cur = this.streams[role]
@@ -92,35 +110,35 @@ export class NdiService {
       // khiến frame paint không đúng resW×resH. Đo frame thật rồi resize cửa sổ cho khớp.
       let correcting = false
       let stableFrames = 0
+      let attempts = 0 // cap số lần resize để không loop vô hạn
 
       win.webContents.setFrameRate(fps)
       // Gửi theo paint, nhưng CHỈ copy+gửi khi không còn frame đang bay (inflight)
       // → copy 47MB được điều tiết theo tốc độ gửi thật, không nghẽn main process.
       win.webContents.on('paint', (_e, _dirty, image) => {
         const st = this.streams[role]
-        if (!st || st.sender !== sender || st.inflight) return
+        if (!st || st.sender !== sender || st.inflight || correcting) return
         const size = image.getSize()
         if (!size.width || !size.height) return
-        // hiệu chỉnh cho tới khi frame đúng res đã nhập
-        if (!correcting && stableFrames < 3 && (Math.abs(size.width - resW) > 2 || Math.abs(size.height - resH) > 2)) {
+        // hiệu chỉnh cho tới khi frame đúng res đã nhập (tối đa vài lần rồi chấp nhận)
+        if (stableFrames < 3 && attempts < 6 && (Math.abs(size.width - resW) > 2 || Math.abs(size.height - resH) > 2)) {
           if (win.isDestroyed()) return
           const [cw, ch] = win.getContentSize()
-          const realDprW = size.width / cw
-          const realDprH = size.height / ch
-          const newW = Math.max(1, Math.round(resW / realDprW))
-          const newH = Math.max(1, Math.round(resH / realDprH))
+          const newW = Math.max(1, Math.round(resW / (size.width / cw)))
+          const newH = Math.max(1, Math.round(resH / (size.height / ch)))
           if (newW !== cw || newH !== ch) {
             correcting = true
-            console.log(`[ndi] ${role}: frame ${size.width}x${size.height} != ${resW}x${resH} → resize cửa sổ ${cw}x${ch}→${newW}x${newH}`)
+            attempts++
+            console.log(`[ndi] ${role}: frame ${size.width}x${size.height} != ${resW}x${resH} → resize ${cw}x${ch}→${newW}x${newH}`)
             win.setContentSize(newW, newH)
             setTimeout(() => { correcting = false }, 250)
             return // bỏ frame sai kích thước, chờ frame đúng
           }
         }
-        if (Math.abs(size.width - resW) <= 2 && Math.abs(size.height - resH) <= 2) {
-          if (stableFrames === 0) console.log(`[ndi] ${role}: OK phát đúng ${size.width}x${size.height}`)
-          stableFrames++
+        if (stableFrames === 0 && Math.abs(size.width - resW) <= 2 && Math.abs(size.height - resH) <= 2) {
+          console.log(`[ndi] ${role}: OK phát đúng ${size.width}x${size.height}`)
         }
+        stableFrames++
         st.inflight = true
         const data = Buffer.from(image.getBitmap()) // BGRA
         sender

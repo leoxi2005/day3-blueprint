@@ -28,7 +28,7 @@ function buildCards(baseNames: string[], W: number, H: number, cx: number) {
   })
 }
 
-function useAscensionCanvas(W: number, H: number, cx: number) {
+function useAscensionCanvas(W: number, H: number, cxRef: React.MutableRefObject<number>) {
   const ref = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
     const cv = ref.current
@@ -36,7 +36,6 @@ function useAscensionCanvas(W: number, H: number, cx: number) {
     cv.width = W
     cv.height = H
     const ctx = cv.getContext('2d')!
-    const PX = W * cx
     const PY = H * 0.157
     const nStars = Math.min(2000, Math.max(400, Math.round(1750 * (W * H) / (DW * DH))))
     const nDust = Math.min(320, Math.max(60, Math.round(260 * (W * H) / (DW * DH))))
@@ -55,6 +54,7 @@ function useAscensionCanvas(W: number, H: number, cx: number) {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
       const t = (now - t0) / 1000
+      const PX = W * cxRef.current // đọc điểm hút live (không restart canvas)
       ctx.clearRect(0, 0, W, H)
       ctx.fillStyle = 'rgb(216,234,255)'
       ctx.strokeStyle = 'rgb(230,242,255)'
@@ -106,12 +106,14 @@ function useAscensionCanvas(W: number, H: number, cx: number) {
     }
     raf = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(raf)
-  }, [W, H, cx])
+  }, [W, H])
   return ref
 }
 
 export function Ascension({ names, W = DW, H = DH, cx = 0.5 }: { names: string[]; W?: number; H?: number; cx?: number }) {
-  const canvasRef = useAscensionCanvas(W, H, cx)
+  const cxRef = useRef(cx)
+  cxRef.current = cx
+  const canvasRef = useAscensionCanvas(W, H, cxRef)
   const k = Math.min(W / DW, H / DH)
   const PX = W * cx
   const PY = H * 0.157

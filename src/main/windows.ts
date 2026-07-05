@@ -49,6 +49,7 @@ function forwardConsole(win: BrowserWindow, role: Role): void {
 
 export class WindowManager {
   private wins: Partial<Record<Role, BrowserWindow>> = {}
+  onOutputClosed: ((role: 'wall' | 'floor') => void) | null = null
 
   getAll(): BrowserWindow[] {
     return Object.values(this.wins).filter((w): w is BrowserWindow => !!w && !w.isDestroyed())
@@ -56,6 +57,11 @@ export class WindowManager {
 
   getOutput(role: 'wall' | 'floor'): BrowserWindow | undefined {
     const w = this.wins[role]
+    return w && !w.isDestroyed() ? w : undefined
+  }
+
+  getControl(): BrowserWindow | undefined {
+    const w = this.wins.control
     return w && !w.isDestroyed() ? w : undefined
   }
 
@@ -119,6 +125,13 @@ export class WindowManager {
       }
     })
     forwardConsole(win, role)
+    // Người dùng đóng cửa sổ output bằng tay → báo store cập nhật open=false.
+    win.on('closed', () => {
+      if (this.wins[role] === win) {
+        delete this.wins[role]
+        if (role === 'wall' || role === 'floor') this.onOutputClosed?.(role)
+      }
+    })
     load(win, role)
     this.placeOnDisplay(win, o)
     this.wins[role] = win

@@ -29,7 +29,7 @@ function build(i: number, n: number, W: number, H: number) {
   const spanL = W * 0.031
   const spanR = W - spanL
   const step = n > 1 ? (spanR - spanL) / (n - 1) : 0
-  const cx = spanL + i * step
+  const cx = n > 1 ? spanL + i * step : W / 2
   let cy = H * (0.5 + Math.sin(i * 0.8 + 1) * 0.14 + (i % 2 ? 0.06 : -0.045))
   cy = Math.max(H * 0.28, Math.min(H * 0.72, cy))
   const dep = ((i * 5) % 7) / 6

@@ -58,7 +58,7 @@ function defaultState(): ShowState {
     draftDuration: 30,
     autoAscend: false,
     ascendHold: 3,
-    simulateTraffic: true
+    simulateTraffic: false
   }
 }
 
@@ -86,6 +86,16 @@ export class ShowStore {
   /** Cầu nối tới OSC service (Phase 3). Chưa nối thì action vẫn ghi log nội bộ. */
   setOscEmitter(fn: OscEmit): void {
     this.oscEmit = fn
+  }
+
+  /** Cửa sổ output bị đóng tay → đồng bộ open=false trong state. */
+  markOutputClosed(key: string): void {
+    const o = this.state.outputs.slice()
+    const i = o.findIndex((x) => x.key === key)
+    if (i < 0 || !o[i].open) return
+    o[i] = { ...o[i], open: false }
+    this.set({ outputs: o })
+    this.log(OSC.window, o[i].label.toLowerCase() + ' đóng (tay)')
   }
 
   private set(patch: Partial<ShowState>): void {
@@ -145,7 +155,7 @@ export class ShowStore {
       sceneSel: { ...c.sceneSel },
       ascendX: c.ascendX ?? 0.5,
       outputs,
-      ndi: { ...this.state.ndi, fps: c.ndiFps ?? 60 },
+      ndi: { ...this.state.ndi, fps: c.ndiFps ?? 30 },
       oscPort: c.oscPort ?? 9000,
       draftDuration: c.draftDuration ?? 30,
       globalState: 'field',
